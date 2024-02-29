@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenida Monitor</title>
+  <?!= includeCDNHeader(); ?>
+
+</head>
+
+
+<?!= includeCSS(); ?>
+
+<body>
+
+
+  <?!=includeSidebar(); ?>
+  <!-- NAVBAR -->
+  <section id="content">
+    <!-- NAVBAR -->
+
+    <?!= includeHeader(); ?>
+
+    <!-- NAVBAR -->
+
+    <!-- MAIN -->
+    <main>
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            <div class="card shadow-lg rounded mx-auto">
+              <!-- Añadido mx-auto -->
+              <div class="container bg-primary py-2 text-white rounded-top">
+                <h2 class="fw-bold mb-3">REGISTRO DE SESIÓN DE TUTORIA</h2>
+                <p class="mb-3 fw-bold">Monitor: <span id="nombreCompleto" class="fw-normal"></span></p>
+                <p class="mb-3 fw-bold">Carrera: <span id="carrera" class="fw-normal"></span></p>
+              </div>
+
+              <div class="card-body p-4">
+                <form id="formAsistencia">
+                  <div class="mb-3">
+                    <label for="fechaRealizacion" class="form-label">FECHA DE REALIZACIÓN</label>
+                    <input type="datetime-local" class="form-control" id="fechaRealizacion" required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">MANERA</label>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="manera" id="presencial" value="presencial" onchange="mostrarLugar()">
+                      <label class="form-check-label" for="presencial">Presencial</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="manera" id="virtual" value="virtual" onchange="ocultarLugar()">
+                      <label class="form-check-label" for="virtual">Virtual</label>
+                    </div>
+                  </div>
+                  <div class="mb-3" id="campoLugar" style="display: none;">
+                    <label for="lugar" class="form-label">Lugar</label>
+                    <input type="text" class="form-control" id="lugar">
+                  </div>
+                  <div class="mb-3">
+                    <label for="semestre" class="form-label">SEMESTRE</label>
+                    <select id="semestre" class="form-select" onchange="cargarEstudiantes()">
+                                <!-- Options se cargarán dinámicamente desde Google Sheets -->
+                            </select>
+                  </div>
+                  <div class="mb-3">
+                    <label for="estudiantes" class="form-label">ESTUDIANTE</label>
+                    <select id="estudiantes" class="form-select">
+                            </select>
+                  </div>
+                  <div class="mb-3">
+                    <label for="aspectos" class="form-label">ASPECTOS</label>
+                    <textarea class="form-control" id="aspectos"></textarea>
+                  </div>
+                  <div class="mb-3">
+                    <label for="acuerdos" class="form-label">ACUERDOS</label>
+                    <textarea class="form-control" id="acuerdos"></textarea>
+                  </div>
+                  <button type="button" class="btn btn-primary" onclick="validarYEnviarFormulario()">Enviar</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- MAIN -->
+  </section>
+  <!-- NAVBAR -->
+  <script>
+    // INICIALIZAR DE MANERA GLOBAL
+    showUserDetails();
+    function showUserDetails() {
+        google.script.run.withSuccessHandler(function(userDetails) {
+            if (userDetails && userDetails.nombreCompleto && userDetails.carrera) {
+                var nombreCompleto = userDetails.nombreCompleto;
+          
+                document.getElementById('nombreCompleto').innerText = nombreCompleto;
+                document.getElementById('carrera').innerText = userDetails.carrera;
+    
+                cargarSemestres(nombreCompleto);
+            }
+        }).getUserDetails();
+    }
+    
+    
+    function cargarSemestres(nombreCompleto) {
+        google.script.run.withSuccessHandler(function(semestres) {
+            var semestreSelect = document.getElementById("semestre");
+            semestreSelect.innerHTML = "";
+      
+    
+            var defaultOption = new Option("Seleccione un Semestre", "");
+            semestreSelect.add(defaultOption);
+    
+            semestres.forEach(function(semestre) {
+                var option = new Option(semestre, semestre);
+                semestreSelect.add(option);
+            });
+    
+            semestreSelect.onchange = function() {
+                cargarEstudiantes(nombreCompleto);
+            };
+        }).getSemestresPorMonitor(nombreCompleto);
+    }
+    
+    function cargarEstudiantes(nombreCompleto) {
+        var semestreSeleccionado = document.getElementById("semestre").value;
+        var estudiantesSelect = document.getElementById("estudiantes");
+        estudiantesSelect.innerHTML = "";
+    
+        if (semestreSeleccionado) {
+            google.script.run.withSuccessHandler(function(estudiantes) {
+                var defaultOption = new Option("Seleccione un Estudiante", "");
+                estudiantesSelect.add(defaultOption);
+    
+                estudiantes.forEach(function(estudiante) {
+                    var option = new Option(estudiante, estudiante);
+                    estudiantesSelect.add(option);
+                });
+    
+           
+            }).getEstudiantesPorSemestreYMonitor(semestreSeleccionado, nombreCompleto);
+        } else {
+            var defaultOption = new Option("Seleccione un Estudiante", "");
+            estudiantesSelect.add(defaultOption);
+  
+        }
+    }
+function validarYEnviarFormulario() {
+    var camposFaltantes = obtenerCamposFaltantes();
+
+    if (camposFaltantes.length === 0) {
+        enviarFormulario();
+    } else {
+        mostrarAlertaCamposFaltantes(camposFaltantes);
+    }
+}
+
+function obtenerCamposFaltantes() {
+    var camposFaltantes = [];
+
+    var fechaRealizacion = document.getElementById('fechaRealizacion');
+    var semestre = document.getElementById('semestre');
+    var estudiante = document.getElementById('estudiantes');
+    var aspectos = document.getElementById('aspectos');
+    var acuerdos = document.getElementById('acuerdos');
+    var maneraSeleccionada = document.querySelector('input[name="manera"]:checked');
+
+    if (!fechaRealizacion || fechaRealizacion.value === '') {
+        camposFaltantes.push('El campo Fecha de Realización es requerido');
+    }
+    if (!semestre || semestre.value === '') {
+        camposFaltantes.push('El campo Semestre es requerido');
+    }
+    if (!estudiante || estudiante.value === '') {
+        camposFaltantes.push('El campo Estudiante es requerido');
+    }
+    if (!aspectos || aspectos.value === '') {
+        camposFaltantes.push('El campo Aspectos es requerido');
+    }
+    if (!acuerdos || acuerdos.value === '') {
+        camposFaltantes.push('El campo Acuerdos es requerido');
+    }
+    if (!maneraSeleccionada || (maneraSeleccionada.value === 'presencial' && (!document.getElementById('lugar') || document.getElementById('lugar').value === ''))) {
+        camposFaltantes.push('El campo Manera o Lugar es requerido');
+    }
+
+    return camposFaltantes;
+}
+
+
+
+function mostrarAlertaCamposFaltantes(camposFaltantes) {
+    var mensaje = '<ul style="text-align: left;">';
+    camposFaltantes.forEach(function (campo) {
+        mensaje += '<li>• ' + campo + '</li>';
+    });
+    mensaje += '</ul>';
+
+    Swal.fire({
+        icon: 'error',
+        title: 'Por favor, complete los siguientes campos:',
+        html: mensaje,
+    });
+}
+
+
+
+
+    function enviarFormulario() {
+        var fechaRealizacion = document.getElementById('fechaRealizacion').value;
+        var carrera = document.getElementById('carrera').innerText;
+        var monitor = document.getElementById('nombreCompleto').innerText;
+        var correo = '<?!= email ?>'; 
+    
+        var semestre = document.getElementById('semestre').value;
+        var estudiante = document.getElementById('estudiantes').value;
+        var manera = document.querySelector('input[name="manera"]:checked').value;
+        var lugar = '';
+        var aspectos = document.getElementById('aspectos').value; 
+        var acuerdos = document.getElementById('acuerdos').value; 
+    
+        if (manera === 'presencial') {
+            lugar = document.getElementById('lugar').value;
+        }
+    
+        // Enviar los datos del formulario a Google Sheets utilizando google.script.run
+        google.script.run.enviarDatosModal2([fechaRealizacion, carrera, correo, monitor, semestre, estudiante, manera, lugar, aspectos, acuerdos]);
+    
+        // Mostrar mensaje de éxito
+        Swal.fire({
+            icon: 'success',
+            title: 'Formulario enviado',
+            text: 'El formulario se ha enviado correctamente.',
+            timer: 2000,
+            timerProgressBar: true,
+            onClose: () => {
+            document.getElementById('fechaRealizacion').value = '';
+            document.getElementById('lugar').style.display = 'none'; 
+            document.getElementById('aspectos').value = '';
+            document.getElementById('acuerdos').value = ''; 
+       
+            var radios = document.querySelectorAll('input[name="manera"]:checked');
+            radios.forEach(radio => {
+                radio.checked = false;
+            });
+         
+            document.getElementById('semestre').value = '';
+            document.getElementById('estudiantes').value = '';
+            }
+        });
+    }
+    
+    
+    
+    function mostrarLugar() {
+        document.getElementById("campoLugar").style.display = "block";
+    }
+    
+    // Función para ocultar el campo de lugar si es virtual
+    function ocultarLugar() {
+        document.getElementById("campoLugar").style.display = "none";
+    }
+    
+     // Obtener el elemento del campo de fecha
+    var fechaInput = document.getElementById('fechaRealizacion');
+
+    // Obtener la fecha actual
+    var fechaActual = new Date();
+
+    // Formatear la fecha actual para que coincida con el formato del input datetime-local
+    var formatoFechaActual = fechaActual.getFullYear() + '-' +
+                             ('0' + (fechaActual.getMonth() + 1)).slice(-2) + '-' +
+                             ('0' + fechaActual.getDate()).slice(-2) + 'T' +
+                             ('0' + fechaActual.getHours()).slice(-2) + ':' +
+                             ('0' + fechaActual.getMinutes()).slice(-2);
+
+    // Establecer el valor mínimo del campo de fecha al valor de la fecha actual
+    fechaInput.min = formatoFechaActual;
+
+
+        document.getElementById('fechaRealizacion').addEventListener('input', validarFecha);
+  </script>
+
+  <?!= includeJS(); ?>
+</body>
+
+</html>

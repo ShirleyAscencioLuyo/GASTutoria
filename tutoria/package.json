@@ -1,0 +1,16 @@
+{
+  "name": "tutoria",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "start https://script.google.com/a/macros/vallegrande.edu.pe/s/AKfycbxRHkkKEeoiNzKTwu_ODOXcGu346UB65m9JoDcgqJ4/dev",
+    "pod": "clasp push && clasp pull && clear"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/google-apps-script": "^1.0.80"
+  }
+}

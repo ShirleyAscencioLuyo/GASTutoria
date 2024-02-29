@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenida Monitor</title>
+  <?!= includeCDNHeader(); ?>
+</head>
+
+
+<?!= includeCSS(); ?>
+
+<body>
+
+
+  <?!=includeSidebar(); ?>
+  <!-- NAVBAR -->
+  <section id="content">
+    <!-- NAVBAR -->
+
+    <?!= includeHeader(); ?>
+
+    <!-- NAVBAR -->
+
+    <!-- MAIN -->
+    <main>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg rounded mx-auto"> <!-- Añadido mx-auto -->
+                <div class="container bg-primary py-2 text-white rounded-top">
+                    <h2 class="fw-bold mb-3">REPROGRAMACIÓN DE TUTORIA</h2>
+                    <p class="mb-3 fw-bold">Monitor: <span id="nombreCompleto" class="fw-normal"></span></p>
+                    <p class="mb-3 fw-bold">Carrera: <span id="carrera" class="fw-normal"></span></p>
+                </div>
+
+                <div class="card-body p-4">
+            <form id="formReprogramacion">
+                <!-- Campo de Fecha de Realización -->
+                <div class="mb-3">
+                    <label for="fechaRealizacion" class="form-label">FECHA DE REALIZACIÓN</label>
+                    <input type="datetime-local" class="form-control" id="fechaRealizacionReprogramacion" required>
+                </div>
+
+                <!-- Campo de Semestre -->
+                <div class="mb-3">
+                    <label for="semestreReprogramacion" class="form-label">SEMESTRE</label>
+                    <select id="semestreReprogramacion" class="form-select" onchange="cargarEstudiantesReprogramacion()" disabled>
+                        <!-- Options se cargarán dinámicamente desde Google Sheets -->
+                    </select>
+                </div>
+
+                <!-- Campo de Estudiante -->
+                <div class="mb-3">
+                    <label for="estudiantesReprogramacion" class="form-label">ESTUDIANTE</label>
+                    <select id="estudiantesReprogramacion" class="form-select" disabled>
+                        <!-- Options se cargarán dinámicamente desde Google Sheets -->
+                    </select>
+                </div>
+
+                <!-- Campo de Fecha de Reprogramación -->
+                <div class="mb-3">
+                    <label for="fechaReprogramacion" class="form-label">FECHA DE REPROGRAMACIÓN</label>
+                    <input type="datetime-local" class="form-control" id="fechaReprogramacion" required>
+                </div>
+
+                <!-- Campo de Manera -->
+                <div class="mb-3">
+                    <label class="form-label">MOTIVO</label>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="motivoReprogramacion" value="Problema familiar" onchange="ocultarMotivoReprogramacion()">
+                        <label class="form-check-label" for="problemaFluidoElectrico">Problema familiar</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="motivoReprogramacion" value="Compromiso laboral" onchange="ocultarMotivoReprogramacion()">
+                        <label class="form-check-label" for="problemaConectividadInternet">Compromiso laboral</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="motivoReprogramacion" value="Enfermedad" onchange="ocultarMotivoReprogramacion()">
+                        <label class="form-check-label" for="enfermedad">Enfermedad</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="motivoReprogramacion" value="otro" onchange="mostrarMotivoReprogramacion()">
+                        <label class="form-check-label" for="presencialReprogramacion">Otro :</label>
+                    </div>
+                </div>
+                <!-- Campo de motivo (Otro) -->
+                <div class="mb-3" id="campoMotivoReprogramacion" style="display: none;">
+                    <input type="text" class="form-control" id="otroReprogramacion">
+                </div>
+
+                <!-- Campo de Manera -->
+                <div class="mb-3">
+                    <label class="form-label">MANERA</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="maneraReprogramacion" id="presencialReprogramacion" value="presencial" onchange="mostrarLugarReprogramacion()">
+                        <label class="form-check-label" for="presencialReprogramacion">Presencial</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="maneraReprogramacion" id="virtualReprogramacion" value="virtual" onchange="ocultarLugarReprogramacion()">
+                        <label class="form-check-label" for="virtualReprogramacion">Virtual</label>
+                    </div>
+                </div>
+
+                <!-- Campo de Lugar (solo visible si es presencial) -->
+                <div class="mb-3" id="campoLugarReprogramacion" style="display: none;">
+                    <label for="lugarReprogramacion" class="form-label">Lugar</label>
+                    <input type="text" class="form-control" id="lugarReprogramacion">
+                </div>
+
+                <!-- Campo de Comentario -->
+                <div class="mb-3">
+                    <label for="comentarioReprogramacion" class="form-label">COMENTARIO</label>
+                    <textarea class="form-control" id="comentarioReprogramacion"></textarea>
+                </div>
+
+                <!-- Botón de Enviar -->
+                <button type="button" class="btn btn-primary" onclick="validarYEnviarFormularioReprogramacion()">Enviar</button>
+            </form>
+ </div>
+            </div>
+        </div>
+    </div>
+</div>
+</main>
+
+    <!-- MAIN -->
+  </section>
+  <!-- NAVBAR -->
+
+  <script>
+    // INICIALIZAR DE MANERA GLOBAL
+    showUserDetails();
+
+  
+    // Funciones para el formulario de asistencia
+    function showUserDetails() {
+        google.script.run.withSuccessHandler(function(userDetails) {
+            if (userDetails && userDetails.nombreCompleto && userDetails.carrera) {
+                var nombreCompleto = userDetails.nombreCompleto;
+  
+                document.getElementById('nombreCompleto').innerText = nombreCompleto;
+                document.getElementById('carrera').innerText = userDetails.carrera;
+  
+                cargarSemestres(nombreCompleto);
+            }
+        }).getUserDetails();
+    }
+  
+    function cargarSemestres(nombreCompleto) {
+        google.script.run.withSuccessHandler(function(semestres) {
+            var semestreSelect = document.getElementById("semestreReprogramacion");
+            semestreSelect.innerHTML = "";
+            semestreSelect.disabled = false;
+  
+            var defaultOption = new Option("Seleccione un Semestre", "");
+            semestreSelect.add(defaultOption);
+  
+            semestres.forEach(function(semestre) {
+                var option = new Option(semestre, semestre);
+                semestreSelect.add(option);
+            });
+  
+            semestreSelect.onchange = function() {
+                cargarEstudiantesReprogramacion(nombreCompleto);
+            };
+        }).getSemestresPorMonitor(nombreCompleto);
+    }
+  
+    function cargarEstudiantesReprogramacion(nombreCompleto) {
+        var semestreSeleccionado = document.getElementById("semestreReprogramacion").value;
+        var estudiantesSelect = document.getElementById("estudiantesReprogramacion");
+        estudiantesSelect.innerHTML = "";
+  
+        if (semestreSeleccionado) {
+            google.script.run.withSuccessHandler(function(estudiantes) {
+                var defaultOption = new Option("Seleccione un Estudiante", "");
+                estudiantesSelect.add(defaultOption);
+  
+                estudiantes.forEach(function(estudiante) {
+                    var option = new Option(estudiante, estudiante);
+                    estudiantesSelect.add(option);
+                });
+  
+                estudiantesSelect.disabled = false;
+            }).getEstudiantesPorSemestreYMonitor(semestreSeleccionado, nombreCompleto);
+        } else {
+            var defaultOption = new Option("Seleccione un Estudiante", "");
+            estudiantesSelect.add(defaultOption);
+            estudiantesSelect.disabled = true;
+        }
+    }
+
+    function validarYEnviarFormularioReprogramacion() {
+    var camposFaltantes = obtenerCamposFaltantesReprogramacion();
+
+    if (camposFaltantes.length === 0) {
+        enviarFormularioReprogramacion();
+    } else {
+        mostrarAlertaCamposFaltantesReprogramacion(camposFaltantes);
+    }
+}
+
+function obtenerCamposFaltantesReprogramacion() {
+    var camposFaltantes = [];
+
+    var fechaRealizacion = document.getElementById('fechaRealizacionReprogramacion');
+    var fechaReprogramacion = document.getElementById('fechaReprogramacion');
+    var semestre = document.getElementById('semestreReprogramacion');
+    var estudiante = document.getElementById('estudiantesReprogramacion');
+    var comentario = document.getElementById('comentarioReprogramacion');
+    var maneraSeleccionada = document.querySelector('input[name="maneraReprogramacion"]:checked');
+    var motivoSeleccionada = document.querySelector('input[name="motivoReprogramacion"]:checked');
+    if (!fechaRealizacion || fechaRealizacion.value === '') {
+        camposFaltantes.push('El campo Fecha de Realización es requerido');
+    }
+    if (!semestre || semestre.value === '') {
+        camposFaltantes.push('El campo Semestre es requerido');
+    }
+    if (!estudiante || estudiante.value === '') {
+        camposFaltantes.push('El campo Estudiante es requerido');
+    }
+    if (!comentario || comentario.value === '') {
+        camposFaltantes.push('El campo Comentario es requerido');
+    }
+        if (!fechaReprogramacion || fechaReprogramacion.value === '') {
+        camposFaltantes.push('El campo Fecha de Reprogramación es requerido');
+    }
+    if (!maneraSeleccionada) {
+        camposFaltantes.push('Debe seleccionar una Manera');
+    } else if (maneraSeleccionada.value === 'presencial' && (!document.getElementById('lugarReprogramacion') || document.getElementById('lugarReprogramacion').value === '')) {
+        camposFaltantes.push('El campo Lugar es requerido para la modalidad presencial');
+    }
+    if (!motivoSeleccionada) {
+        camposFaltantes.push('Debe seleccionar un Motivo');
+    } else if (motivoSeleccionada.value === 'otro' && (!document.getElementById('otroReprogramacion') || document.getElementById('otroReprogramacion').value === '')) {
+        camposFaltantes.push('Debe especificar un Motivo');
+    }
+
+    return camposFaltantes;
+}
+
+
+
+
+function mostrarAlertaCamposFaltantesReprogramacion(camposFaltantes) {
+    var mensaje = '<ul style="text-align: left;">';
+    camposFaltantes.forEach(function (campo) {
+        mensaje += '<li>• ' + campo + '</li>';
+    });
+    mensaje += '</ul>';
+
+    Swal.fire({
+        icon: 'error',
+        title: 'Por favor, complete los siguientes campos:',
+        html: mensaje,
+    });
+}
+
+
+
+  
+    function enviarFormularioReprogramacion() {
+    var fechaRealizacion = document.getElementById('fechaRealizacionReprogramacion').value;
+    var semestre = document.getElementById('semestreReprogramacion').value;
+    var estudiante = document.getElementById('estudiantesReprogramacion').value;
+    var fechaReprogramacion = document.getElementById('fechaReprogramacion').value;
+    var manera = document.querySelector('input[name="maneraReprogramacion"]:checked').value;
+    var motivo = document.querySelector('input[name="motivoReprogramacion"]:checked').value;
+    var comentario = document.getElementById('comentarioReprogramacion').value;
+    var carrera = document.getElementById('carrera').innerText;
+    var monitor = document.getElementById('nombreCompleto').innerText;
+
+    var correo = '<?!= email ?>'; // Obtener el correo electrónico del usuario desde el doGet()
+
+    var lugar = '';
+    var motivoFinal = '';
+    if (manera === 'presencial') {
+        lugar = document.getElementById('lugarReprogramacion').value;
+    }
+        if (motivo == 'otro') {
+        motivoFinal = document.getElementById('otroReprogramacion').value;
+    } else{
+      motivoFinal = motivo;
+    }
+
+
+    google.script.run.enviarDatosModal3([fechaRealizacion, carrera , correo , monitor ,semestre, estudiante, fechaReprogramacion, motivoFinal,manera,lugar, comentario]);
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Formulario enviado',
+        text: 'El formulario se ha enviado correctamente.',
+        timer: 2000,
+        timerProgressBar: true,
+        onClose: () => {
+             document.getElementById('fechaRealizacionReprogramacion').value = '';
+            document.getElementById('semestreReprogramacion').value = '';
+            document.getElementById('estudiantesReprogramacion').value = '';
+            document.getElementById('fechaReprogramacion').value = '';
+            document.getElementById('lugarReprogramacion').value = '';
+            document.getElementById('comentarioReprogramacion').value = ''; 
+
+            var radiosManera = document.querySelectorAll('input[name="maneraReprogramacion"]:checked');
+            radiosManera.forEach(radio => {
+                radio.checked = false;
+            });
+            var radiosMotivo = document.querySelectorAll('input[name="motivoReprogramacion"]:checked');
+            radiosMotivo.forEach(radio => {
+                radio.checked = false;
+            });
+        }
+    });
+}
+
+
+
+    function mostrarLugarReprogramacion() {
+        document.getElementById("campoLugarReprogramacion").style.display = "block";
+    }
+  
+    function ocultarLugarReprogramacion() {
+        document.getElementById("campoLugarReprogramacion").style.display = "none";
+    }
+  
+    function mostrarMotivoReprogramacion() {
+        document.getElementById("campoMotivoReprogramacion").style.display = "block";
+    }
+  
+    function ocultarMotivoReprogramacion() {
+        document.getElementById("campoMotivoReprogramacion").style.display = "none";
+    }
+    
+
+  function establecerMinFechaReprogramacion() {
+
+      var fechaReprogramacionInput = document.getElementById('fechaReprogramacion');
+      var fechaReprogramacionInput = document.getElementById('fechaReprogramacion');
+
+
+      var fechaReprogramacion = new Date(fechaReprogramacionInput.value);
+
+
+      fechaReprogramacionInput.min = fechaReprogramacionInput.value;
+    }
+
+
+    document.getElementById('fechaReprogramacion').addEventListener('change', establecerMinFechaReprogramacion);
+   
+  </script>
+  <?!= includeJS(); ?>
+</body>
+
+</html>
